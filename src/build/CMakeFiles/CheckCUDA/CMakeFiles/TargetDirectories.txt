@@ -1,0 +1,2 @@
+/home/nina/darknet/src/build/CMakeFiles/CheckCUDA/CMakeFiles/edit_cache.dir
+/home/nina/darknet/src/build/CMakeFiles/CheckCUDA/CMakeFiles/rebuild_cache.dir

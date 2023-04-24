@@ -37,13 +37,17 @@ def parser():
 def check_arguments_errors(args):
     assert 0 < args.thresh < 1, "Threshold should be a float between zero and one (non-inclusive)"
     if not os.path.exists(args.config_file):
-        raise(ValueError("Invalid config path {}".format(os.path.abspath(args.config_file))))
+        raise (ValueError("Invalid config path {}".format(
+            os.path.abspath(args.config_file))))
     if not os.path.exists(args.weights):
-        raise(ValueError("Invalid weight path {}".format(os.path.abspath(args.weights))))
+        raise (ValueError("Invalid weight path {}".format(
+            os.path.abspath(args.weights))))
     if not os.path.exists(args.data_file):
-        raise(ValueError("Invalid data file path {}".format(os.path.abspath(args.data_file))))
+        raise (ValueError("Invalid data file path {}".format(
+            os.path.abspath(args.data_file))))
     if args.input and not os.path.exists(args.input):
-        raise(ValueError("Invalid image path {}".format(os.path.abspath(args.input))))
+        raise (ValueError("Invalid image path {}".format(
+            os.path.abspath(args.input))))
 
 
 def check_batch_shape(images, batch_size):
@@ -91,8 +95,10 @@ def prepare_batch(images, network, channels=3):
         darknet_images.append(custom_image)
 
     batch_array = np.concatenate(darknet_images, axis=0)
-    batch_array = np.ascontiguousarray(batch_array.flat, dtype=np.float32)/255.0
-    darknet_images = batch_array.ctypes.data_as(darknet.POINTER(darknet.c_float))
+    batch_array = np.ascontiguousarray(
+        batch_array.flat, dtype=np.float32)/255.0
+    darknet_images = batch_array.ctypes.data_as(
+        darknet.POINTER(darknet.c_float))
     return darknet.IMAGE(width, height, channels, darknet_images)
 
 
@@ -112,7 +118,8 @@ def image_detection(image_or_path, network, class_names, class_colors, thresh):
                                interpolation=cv2.INTER_LINEAR)
 
     darknet.copy_image_from_bytes(darknet_image, image_resized.tobytes())
-    detections = darknet.detect_image(network, class_names, darknet_image, thresh=thresh)
+    detections = darknet.detect_image(
+        network, class_names, darknet_image, thresh=thresh)
     darknet.free_image(darknet_image)
     image = darknet.draw_boxes(detections, image_resized, class_colors)
     return cv2.cvtColor(image, cv2.COLOR_BGR2RGB), detections
@@ -122,8 +129,10 @@ def batch_detection(network, images, class_names, class_colors,
                     thresh=0.25, hier_thresh=.5, nms=.45, batch_size=4):
     image_height, image_width, _ = check_batch_shape(images, batch_size)
     darknet_images = prepare_batch(images, network)
-    batch_detections = darknet.network_predict_batch(network, darknet_images, batch_size, image_width,
-                                                     image_height, thresh, hier_thresh, None, 0, 0)
+    batch_detections = darknet.network_predict_batch(network, darknet_images,
+                                                     batch_size, image_width,
+                                                     image_height, thresh,
+                                                     hier_thresh, None, 0, 0)
     batch_predictions = []
     for idx in range(batch_size):
         num = batch_detections[idx].num
@@ -131,7 +140,8 @@ def batch_detection(network, images, class_names, class_colors,
         if nms:
             darknet.do_nms_obj(detections, num, len(class_names), nms)
         predictions = darknet.remove_negatives(detections, class_names, num)
-        images[idx] = darknet.draw_boxes(predictions, images[idx], class_colors)
+        images[idx] = darknet.draw_boxes(
+            predictions, images[idx], class_colors)
         batch_predictions.append(predictions)
     darknet.free_batch_detections(batch_detections, batch_size)
     return images, batch_predictions
@@ -142,11 +152,12 @@ def image_classification(image, network, class_names):
     height = darknet.network_height(network)
     image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
     image_resized = cv2.resize(image_rgb, (width, height),
-                                interpolation=cv2.INTER_LINEAR)
+                               interpolation=cv2.INTER_LINEAR)
     darknet_image = darknet.make_image(width, height, 3)
     darknet.copy_image_from_bytes(darknet_image, image_resized.tobytes())
     detections = darknet.predict_image(network, darknet_image)
-    predictions = [(name, detections[idx]) for idx, name in enumerate(class_names)]
+    predictions = [(name, detections[idx])
+                   for idx, name in enumerate(class_names)]
     darknet.free_image(darknet_image)
     return sorted(predictions, key=lambda x: -x[1])
 
@@ -169,7 +180,8 @@ def save_annotations(name, image, detections, class_names):
         for label, confidence, bbox in detections:
             x, y, w, h = convert2relative(image, bbox)
             label = class_names.index(label)
-            f.write("{} {:.4f} {:.4f} {:.4f} {:.4f} {:.4f}\n".format(label, x, y, w, h, float(confidence)))
+            f.write("{} {:.4f} {:.4f} {:.4f} {:.4f} {:.4f}\n".format(
+                label, x, y, w, h, float(confidence)))
 
 
 def batch_detection_example():
@@ -218,7 +230,7 @@ def main():
         prev_time = time.time()
         image, detections = image_detection(
             image_name, network, class_names, class_colors, args.thresh
-            )
+        )
         if args.save_labels:
             save_annotations(image_name, image, detections, class_names)
         darknet.print_detections(detections, args.ext_output)
